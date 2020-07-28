@@ -39,6 +39,7 @@
 
 #pragma once
 
+#include <pcl/pcl_config.h> // for PCL_NO_PRECOMPILE
 #include <pcl/pcl_base.h>
 #include <pcl/PointIndices.h>
 #include <pcl/ModelCoefficients.h>

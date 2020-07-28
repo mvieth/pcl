@@ -38,6 +38,7 @@
 #pragma once
 
 // common includes
+#include <pcl/pcl_config.h> // for PCL_NO_PRECOMPILE, PCL_ONLY_CORE_POINT_TYPES
 #include <pcl/pcl_base.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>

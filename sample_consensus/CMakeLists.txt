@@ -62,6 +62,7 @@ set(incs
 )
 
 set(impl_incs
+  "include/pcl/${SUBSYS_NAME}/impl/sac.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/lmeds.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/mlesac.hpp"
   "include/pcl/${SUBSYS_NAME}/impl/msac.hpp"

@@ -37,6 +37,7 @@
  *
  */
 
+#include <pcl/pcl_config.h> // for PCL_ONLY_CORE_POINT_TYPES
 #include <pcl/impl/instantiate.hpp>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
