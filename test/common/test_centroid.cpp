@@ -44,6 +44,10 @@
 
 #include <pcl/common/centroid.h>
 
+#include <boost/random/mersenne_twister.hpp> // for mt19937
+#include <boost/random/normal_distribution.hpp> // for normal_distribution
+#include <boost/random/variate_generator.hpp> // for variate_generator
+
 using namespace pcl;
 using pcl::test::EXPECT_EQ_VECTORS;
 
@@ -792,6 +796,99 @@ TEST (PCL, computeMeanAndCovariance)
   EXPECT_EQ (covariance_matrix (2, 0), 0);
   EXPECT_EQ (covariance_matrix (2, 1), 0);
   EXPECT_EQ (covariance_matrix (2, 2), 1);
+}
+
+TEST (PCL, computeMeanAndCovarianceExtended)
+{
+  using Scalar=float;
+  boost::mt19937 rng;
+  boost::normal_distribution<> nd (0.0, 1.0);
+  boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > var_nor (rng, nd);
+  auto test = [&var_nor](const auto& num_points, const auto& real_mean, const auto& real_cov){
+    // generate points
+    Eigen::LLT<Eigen::Matrix3f> llt_of_cov;
+    llt_of_cov.compute (real_cov);
+    Eigen::Matrix3f cholesky_decomp = llt_of_cov.matrixL ();
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    for(std::size_t i=0; i<num_points; ++i) {
+      Eigen::Vector3f p = real_mean + cholesky_decomp * Eigen::Vector3f(var_nor(), var_nor(), var_nor());
+      cloud.emplace_back(p.x(), p.y(), p.z());
+    }
+
+    // compute precise mean + covariance in double precision
+    Eigen::Vector3d precise_mean(0, 0, 0);
+    for(const auto& point : cloud) {
+      precise_mean.x() += point.x;
+      precise_mean.y() += point.y;
+      precise_mean.z() += point.z;
+    }
+    precise_mean *= 1.0/cloud.size();
+    Eigen::Matrix3d precise_cov = Eigen::Matrix3d::Zero();
+    for(const auto& point : cloud) {
+      precise_cov(0, 0) += (point.x-precise_mean.x())*(point.x-precise_mean.x());
+      precise_cov(1, 1) += (point.y-precise_mean.y())*(point.y-precise_mean.y());
+      precise_cov(2, 2) += (point.z-precise_mean.z())*(point.z-precise_mean.z());
+      precise_cov(0, 1) += (point.x-precise_mean.x())*(point.y-precise_mean.y());
+      precise_cov(0, 2) += (point.x-precise_mean.x())*(point.z-precise_mean.z());
+      precise_cov(1, 2) += (point.y-precise_mean.y())*(point.z-precise_mean.z());
+    }
+    precise_cov(1, 0) = precise_cov(0, 1);
+    precise_cov(2, 0) = precise_cov(0, 2);
+    precise_cov(2, 1) = precise_cov(1, 2);
+    precise_cov *= 1.0/cloud.size();
+    
+    Eigen::Matrix<Scalar, 3, 3> covariance_matrix;
+    Eigen::Matrix<Scalar, 4, 1> centroid;
+    computeMeanAndCovarianceMatrix(cloud, covariance_matrix, centroid);
+    // compute how good the results are
+    return std::pair<double, double>((centroid.head<3>().cast<double>()-precise_mean).norm(), (covariance_matrix.cast<double>()-precise_cov).norm());
+  };
+
+  const std::size_t num_repeats = 30;
+  const std::vector<std::size_t> num_points = {1000, 10000, 100000, 1000000};
+  const std::vector<Eigen::Vector3f> real_mean = {Eigen::Vector3f(0, 0, 0), Eigen::Vector3f(1e2, -2e2, 3e2), Eigen::Vector3f(1e4, -2e4, 3e4), Eigen::Vector3f(1e6, -2e6, 3e6)};
+  std::vector<Eigen::Matrix3f> real_cov = {Eigen::Matrix3f(), Eigen::Matrix3f(), Eigen::Matrix3f()};
+  real_cov[0] << 4.0f, 0.0f, 0.0f,
+                 0.0f, 2.0f, 0.0f,
+                 0.0f, 0.0f, 3.0f;
+  real_cov[1] << 400.0f, 0.0f, 0.0f,
+                 0.0f, 200.0f, 0.0f,
+                 0.0f, 0.0f, 300.0f;
+  real_cov[2] << 40000.0f, 0.0f, 0.0f,
+                 0.0f, 20000.0f, 0.0f,
+                 0.0f, 0.0f, 30000.0f;
+  std::cout << "[";
+  for(const auto& np : num_points) {
+    double mean_sum = 0.0, mean_cov = 0.0;
+    for(std::size_t i=0; i<num_repeats; ++i) {
+      auto res = test(np, real_mean[1], real_cov[0]);
+      mean_sum += res.first;
+      mean_cov += res.second;
+    }
+    std::cout << "[" << mean_sum/num_repeats << ", " << mean_cov/num_repeats << "]," << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "[";
+  for(const auto& rm : real_mean) {
+    double mean_sum = 0.0, mean_cov = 0.0;
+    for(std::size_t i=0; i<num_repeats; ++i) {
+      auto res = test(num_points[1], rm, real_cov[0]);
+      mean_sum += res.first;
+      mean_cov += res.second;
+    }
+    std::cout << "[" << mean_sum/num_repeats << ", " << mean_cov/num_repeats << "]," << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "[";
+  for(const auto& rc : real_cov) {
+    double mean_sum = 0.0, mean_cov = 0.0;
+    for(std::size_t i=0; i<num_repeats; ++i) {
+      auto res = test(num_points[1], real_mean[1], rc);
+      mean_sum += res.first;
+      mean_cov += res.second;
+    }
+    std::cout << "[" << mean_sum/num_repeats << ", " << mean_cov/num_repeats << "]," << std::endl;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

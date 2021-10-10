@@ -486,6 +486,9 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
                                 Eigen::Matrix<Scalar, 3, 3> &covariance_matrix,
                                 Eigen::Matrix<Scalar, 4, 1> &centroid)
 {
+#define COV_IMPL 2
+#if COV_IMPL==0
+  // Current/naive implementation
   // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
   Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
   std::size_t point_count;
@@ -543,6 +546,209 @@ computeMeanAndCovarianceMatrix (const pcl::PointCloud<PointT> &cloud,
     covariance_matrix.coeffRef (7) = covariance_matrix.coeff (5);
   }
   return (static_cast<unsigned int> (point_count));
+#endif
+
+#if COV_IMPL==1
+  // Two pass
+  // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
+  Eigen::Matrix<Scalar, 1, 6, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 6, Eigen::RowMajor>::Zero ();
+  Eigen::Matrix<Scalar, 1, 3, Eigen::RowMajor> mean = Eigen::Matrix<Scalar, 1, 3, Eigen::RowMajor>::Zero ();
+  std::size_t point_count;
+  if (cloud.is_dense) {
+    point_count = cloud.size ();
+    // For each point in the cloud
+    for (const auto& point: cloud) {
+      mean [0] += point.x;
+      mean [1] += point.y;
+      mean [2] += point.z;
+    }
+  }
+  else {
+    point_count = 0;
+    for (const auto& point: cloud) {
+      if (!isFinite (point))
+        continue;
+
+      mean [0] += point.x;
+      mean [1] += point.y;
+      mean [2] += point.z;
+      ++point_count;
+    }
+  }
+  mean /= static_cast<Scalar> (point_count);
+  if (cloud.is_dense) {
+    // For each point in the cloud
+    for (const auto& point: cloud) {
+      Scalar x = point.x - mean[0], y = point.y - mean[1], z = point.z - mean[2];
+      accu [0] += x * x;
+      accu [1] += x * y;
+      accu [2] += x * z;
+      accu [3] += y * y; // 4
+      accu [4] += y * z; // 5
+      accu [5] += z * z; // 8
+    }
+  }
+  else {
+    for (const auto& point: cloud) {
+      if (!isFinite (point))
+        continue;
+
+      Scalar x = point.x - mean[0], y = point.y - mean[1], z = point.z - mean[2];
+      accu [0] += x * x;
+      accu [1] += x * y;
+      accu [2] += x * z;
+      accu [3] += y * y;
+      accu [4] += y * z;
+      accu [5] += z * z;
+    }
+  }
+  accu /= static_cast<Scalar> (point_count);
+  if (point_count != 0) {
+    centroid[0] = mean[0]; centroid[1] = mean[1]; centroid[2] = mean[2];
+    centroid[3] = 1;
+    covariance_matrix.coeffRef (0) = accu [0];
+    covariance_matrix.coeffRef (1) = accu [1];
+    covariance_matrix.coeffRef (2) = accu [2];
+    covariance_matrix.coeffRef (4) = accu [3];
+    covariance_matrix.coeffRef (5) = accu [4];
+    covariance_matrix.coeffRef (8) = accu [5];
+    covariance_matrix.coeffRef (3) = covariance_matrix.coeff (1);
+    covariance_matrix.coeffRef (6) = covariance_matrix.coeff (2);
+    covariance_matrix.coeffRef (7) = covariance_matrix.coeff (5);
+  }
+  return (static_cast<unsigned int> (point_count));
+#endif
+
+#if COV_IMPL==2
+  // Shifted data/with estimate of mean
+  // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
+  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
+  Eigen::Matrix<Scalar, 3, 1> K(0.0, 0.0, 0.0);
+  for(const auto& point: cloud)
+    if(isFinite(point)) {
+      K = point.getVector3fMap(); break;
+    }
+  //const Eigen::Matrix<Scalar, 3, 1> K(cloud.size()>0?cloud[0].x:0.0, cloud.size()>0?cloud[0].y:0.0, cloud.size()>0?cloud[0].z:0.0); // TODO
+  std::size_t point_count;
+  if (cloud.is_dense)
+  {
+    point_count = cloud.size ();
+    // For each point in the cloud
+    for (const auto& point: cloud)
+    {
+      Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
+      accu [0] += x * x;
+      accu [1] += x * y;
+      accu [2] += x * z;
+      accu [3] += y * y; // 4
+      accu [4] += y * z; // 5
+      accu [5] += z * z; // 8
+      accu [6] += x;
+      accu [7] += y;
+      accu [8] += z;
+    }
+  }
+  else
+  {
+    point_count = 0;
+    for (const auto& point: cloud)
+    {
+      if (!isFinite (point))
+        continue;
+
+      Scalar x = point.x - K.x(), y = point.y - K.y(), z = point.z - K.z();
+      accu [0] += x * x;
+      accu [1] += x * y;
+      accu [2] += x * z;
+      accu [3] += y * y;
+      accu [4] += y * z;
+      accu [5] += z * z;
+      accu [6] += x;
+      accu [7] += y;
+      accu [8] += z;
+      ++point_count;
+    }
+  }
+  accu /= static_cast<Scalar> (point_count);
+  if (point_count != 0)
+  {
+    //centroid.head<3> () = accu.tail<3> ();    -- does not compile with Clang 3.0
+    centroid[0] = accu[6] + K.x(); centroid[1] = accu[7] + K.y(); centroid[2] = accu[8] + K.z();
+    centroid[3] = 1;
+    covariance_matrix.coeffRef (0) = accu [0] - accu [6] * accu [6];
+    covariance_matrix.coeffRef (1) = accu [1] - accu [6] * accu [7];
+    covariance_matrix.coeffRef (2) = accu [2] - accu [6] * accu [8];
+    covariance_matrix.coeffRef (4) = accu [3] - accu [7] * accu [7];
+    covariance_matrix.coeffRef (5) = accu [4] - accu [7] * accu [8];
+    covariance_matrix.coeffRef (8) = accu [5] - accu [8] * accu [8];
+    covariance_matrix.coeffRef (3) = covariance_matrix.coeff (1);
+    covariance_matrix.coeffRef (6) = covariance_matrix.coeff (2);
+    covariance_matrix.coeffRef (7) = covariance_matrix.coeff (5);
+  }
+  return (static_cast<unsigned int> (point_count));
+#endif
+
+#if COV_IMPL==3
+  // welford's online algorithm
+  // create the buffer on the stack which is much faster than using cloud[indices[i]] and centroid as a buffer
+  Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor> accu = Eigen::Matrix<Scalar, 1, 9, Eigen::RowMajor>::Zero ();
+  std::size_t point_count = 0;
+  if (cloud.is_dense)
+  {
+    // For each point in the cloud
+    for (const auto& point: cloud)
+    {
+      ++point_count;
+      Scalar last_mean_x = accu[6], last_mean_y = accu[7], last_mean_z = accu[8];
+      accu [6] += (point.x-accu[6])/point_count;
+      accu [7] += (point.y-accu[7])/point_count;
+      accu [8] += (point.z-accu[8])/point_count;
+      accu [0] += (point.x - last_mean_x) * (point.x - accu[6]);
+      accu [1] += (point.x - last_mean_x) * (point.y - accu[7]);
+      accu [2] += (point.x - last_mean_x) * (point.z - accu[8]);
+      accu [3] += (point.y - last_mean_y) * (point.y - accu[7]);
+      accu [4] += (point.y - last_mean_y) * (point.z - accu[8]);
+      accu [5] += (point.z - last_mean_z) * (point.z - accu[8]);
+    }
+  }
+  else
+  {
+    for (const auto& point: cloud)
+    {
+      if (!isFinite (point))
+        continue;
+
+      ++point_count;
+      Scalar last_mean_x = accu[6], last_mean_y = accu[7], last_mean_z = accu[8];
+      accu [6] += (point.x-accu[6])/point_count;
+      accu [7] += (point.y-accu[7])/point_count;
+      accu [8] += (point.z-accu[8])/point_count;
+      accu [0] += (point.x - last_mean_x) * (point.x - accu[6]);
+      accu [1] += (point.x - last_mean_x) * (point.y - accu[7]);
+      accu [2] += (point.x - last_mean_x) * (point.z - accu[8]);
+      accu [3] += (point.y - last_mean_y) * (point.y - accu[7]);
+      accu [4] += (point.y - last_mean_y) * (point.z - accu[8]);
+      accu [5] += (point.z - last_mean_z) * (point.z - accu[8]);
+    }
+  }
+  //accu /= static_cast<Scalar> (point_count);
+  if (point_count != 0)
+  {
+    //centroid.head<3> () = accu.tail<3> ();    -- does not compile with Clang 3.0
+    centroid[0] = accu[6]; centroid[1] = accu[7]; centroid[2] = accu[8];
+    centroid[3] = 1;
+    covariance_matrix.coeffRef (0) = accu [0] / point_count;
+    covariance_matrix.coeffRef (1) = accu [1] / point_count;
+    covariance_matrix.coeffRef (2) = accu [2] / point_count;
+    covariance_matrix.coeffRef (4) = accu [3] / point_count;
+    covariance_matrix.coeffRef (5) = accu [4] / point_count;
+    covariance_matrix.coeffRef (8) = accu [5] / point_count;
+    covariance_matrix.coeffRef (3) = covariance_matrix.coeff (1);
+    covariance_matrix.coeffRef (6) = covariance_matrix.coeff (2);
+    covariance_matrix.coeffRef (7) = covariance_matrix.coeff (5);
+  }
+  return (static_cast<unsigned int> (point_count));
+#endif
 }
 
 
