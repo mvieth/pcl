@@ -453,7 +453,9 @@ void pcl::GlobalHypothesesVerification<ModelT, SceneT>::SAOptimize(std::vector<i
   mets::noimprove_termination_criteria noimprove (max_iterations_);
   mets::linear_cooling linear_cooling;
   mets::simulated_annealing<move_manager> sa (model, best_recorder, neigh, noimprove, linear_cooling, initial_temp_, 1e-7, 2);
+#if !defined(HAVE_METSLIB)
   sa.setApplyAndEvaluate(true);
+#endif
 
   {
     pcl::ScopeTime t ("SA search...");
