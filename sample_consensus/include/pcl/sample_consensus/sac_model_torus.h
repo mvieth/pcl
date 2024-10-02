@@ -220,6 +220,7 @@ public:
 protected:
   using SampleConsensusModel<PointT>::sample_size_;
   using SampleConsensusModel<PointT>::model_size_;
+  using SampleConsensusModel<PointT>::threads_;
 
   /** \brief Project a point onto a torus given by its model coefficients (radii,
    * torus_center_point, torus_normal)

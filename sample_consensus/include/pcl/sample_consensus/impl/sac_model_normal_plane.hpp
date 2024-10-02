@@ -63,17 +63,22 @@ pcl::SampleConsensusModelNormalPlane<PointT, PointNT>::selectWithinDistance (
     return;
   }
 
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
+
   // Obtain the plane normal
   Eigen::Vector4f coeff = model_coefficients;
   coeff[3] = 0.0f;
 
   inliers.clear ();
-  error_sqr_dists_.clear ();
   inliers.reserve (indices_->size ());
-  error_sqr_dists_.reserve (indices_->size ());
+  error_sqr_dists_.resize (indices_->size ());
 
   // Iterate through the 3d points and calculate the distances from them to the plane
-  for (std::size_t i = 0; i < indices_->size (); ++i)
+#pragma omp parallel for num_threads(threads_) default(none) shared(coeff, model_coefficients, threshold)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size()); ++i)
   {
     const PointT  &pt = (*input_)[(*indices_)[i]];
     const PointNT &nt = (*normals_)[(*indices_)[i]];
@@ -92,12 +97,19 @@ pcl::SampleConsensusModelNormalPlane<PointT, PointNT>::selectWithinDistance (
 
     double distance = std::abs (weight * d_normal + (1.0 - weight) * d_euclid); 
     if (distance < threshold)
-    {
+      error_sqr_dists_[i] = distance;
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+  {
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose distances are smaller than the threshold
       inliers.push_back ((*indices_)[i]);
-      error_sqr_dists_.push_back (distance);
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
   }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

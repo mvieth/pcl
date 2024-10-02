@@ -245,6 +245,7 @@ namespace pcl
     protected:
       using SampleConsensusModel<PointT>::sample_size_;
       using SampleConsensusModel<PointT>::model_size_;
+      using SampleConsensusModel<PointT>::threads_;
 
       /** \brief Get the distance from a point to a line (represented by a point and a direction)
         * \param[in] pt a point

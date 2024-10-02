@@ -213,10 +213,14 @@ pcl::SampleConsensusModelCone<PointT, PointNT>::selectWithinDistance (
     return;
   }
 
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
+
   inliers.clear ();
-  error_sqr_dists_.clear ();
   inliers.reserve (indices_->size ());
-  error_sqr_dists_.reserve (indices_->size ());
+  error_sqr_dists_.resize (indices_->size ());
 
   Eigen::Vector4f apex (model_coefficients[0], model_coefficients[1], model_coefficients[2], 0.0f);
   Eigen::Vector4f axis_dir (model_coefficients[3], model_coefficients[4], model_coefficients[5], 0.0f);
@@ -227,7 +231,8 @@ pcl::SampleConsensusModelCone<PointT, PointNT>::selectWithinDistance (
   float apexdotdir = apex.dot (axis_dir);
   float dirdotdir = 1.0f / axis_dir.dot (axis_dir);
   // Iterate through the 3d points and calculate the distances from them to the cone
-  for (std::size_t i = 0; i < indices_->size (); ++i)
+#pragma omp parallel for num_threads(threads_) default(none) shared(model_coefficients, threshold, apex, axis_dir, apexdotdir, dirdotdir, sin_opening_angle, cos_opening_angle, tan_opening_angle)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size ()); ++i)
   {
     Eigen::Vector4f pt ((*input_)[(*indices_)[i]].x, (*input_)[(*indices_)[i]].y, (*input_)[(*indices_)[i]].z, 0.0f);
 
@@ -242,8 +247,10 @@ pcl::SampleConsensusModelCone<PointT, PointNT>::selectWithinDistance (
     // Approximate the distance from the point to the cone as the difference between
     // dist(point,cone_axis) and actual cone radius
     const double weighted_euclid_dist = (1.0 - normal_distance_weight_) * std::abs (pointToAxisDistance (pt, model_coefficients) - actual_cone_radius);
-    if (weighted_euclid_dist > threshold) // Early termination: cannot be an inlier
+    if (weighted_euclid_dist > threshold) { // Early termination: cannot be an inlier
+      error_sqr_dists_[i] = -1.0;
       continue;
+    }
 
     // Calculate the direction of the point from center
     Eigen::Vector4f pp_pt_dir = pt - pt_proj;
@@ -261,12 +268,17 @@ pcl::SampleConsensusModelCone<PointT, PointNT>::selectWithinDistance (
     double distance = std::abs (normal_distance_weight_ * d_normal + weighted_euclid_dist);
     
     if (distance < threshold)
-    {
+      error_sqr_dists_[i] = distance;
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose distances are smaller than the threshold
       inliers.push_back ((*indices_)[i]);
-      error_sqr_dists_.push_back (distance);
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
-  }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

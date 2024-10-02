@@ -139,12 +139,16 @@ pcl::SampleConsensusModelLine<PointT>::selectWithinDistance (
   if (!isModelValid (model_coefficients))
     return;
 
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
+
   double sqr_threshold = threshold * threshold;
 
   inliers.clear ();
-  error_sqr_dists_.clear ();
   inliers.reserve (indices_->size ());
-  error_sqr_dists_.reserve (indices_->size ());
+  error_sqr_dists_.resize (indices_->size ());
 
   // Obtain the line point and direction
   Eigen::Vector4f line_pt  (model_coefficients[0], model_coefficients[1], model_coefficients[2], 0);
@@ -152,19 +156,25 @@ pcl::SampleConsensusModelLine<PointT>::selectWithinDistance (
   line_dir.normalize ();
 
   // Iterate through the 3d points and calculate the distances from them to the line
-  for (std::size_t i = 0; i < indices_->size (); ++i)
+#pragma omp parallel for num_threads(threads_) default(none) shared(line_pt, line_dir, sqr_threshold)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size ()); ++i)
   {
     // Calculate the distance from the point to the line
     // D = ||(P2-P1) x (P1-P0)|| / ||P2-P1|| = norm (cross (p2-p1, p2-p0)) / norm(p2-p1)
     double sqr_distance = (line_pt - (*input_)[(*indices_)[i]].getVector4fMap ()).cross3 (line_dir).squaredNorm ();
 
     if (sqr_distance < sqr_threshold)
-    {
+      error_sqr_dists_[i] = sqr_distance;
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose squared distances are smaller than the threshold
       inliers.push_back ((*indices_)[i]);
-      error_sqr_dists_.push_back (sqr_distance);
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
-  }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -290,6 +290,7 @@ pcl::SACSegmentation<PointT>::initSACModel (const int model_type)
       return (false);
     }
   }
+  model_->setNumberOfThreads (threads_>=0 ? threads_ : 1);
   return (true);
 }
 
@@ -528,6 +529,7 @@ pcl::SACSegmentationFromNormals<PointT, PointNT>::initSACModel (const int model_
       return (pcl::SACSegmentation<PointT>::initSACModel (model_type));
     }
   }
+  model_->setNumberOfThreads (threads_>=0 ? threads_ : 1);
 
   return (true);
 }

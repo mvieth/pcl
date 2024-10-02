@@ -158,6 +158,7 @@ namespace pcl
       using SampleConsensusModel<PointT>::sample_size_;
       using SampleConsensusModel<PointT>::model_size_;
       using SampleConsensusModelSphere<PointT>::isModelValid;
+      using SampleConsensusModel<PointT>::threads_;
   };
 }
 

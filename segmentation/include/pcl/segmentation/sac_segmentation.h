@@ -311,6 +311,7 @@ namespace pcl
     using SACSegmentation<PointT>::eps_angle_;
     using SACSegmentation<PointT>::axis_;
     using SACSegmentation<PointT>::random_;
+    using SACSegmentation<PointT>::threads_;
 
     public:
       using PCLBase<PointT>::input_;

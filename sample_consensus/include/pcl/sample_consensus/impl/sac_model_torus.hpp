@@ -303,12 +303,16 @@ pcl::SampleConsensusModelTorus<PointT, PointNT>::selectWithinDistance(
     inliers.clear();
     return;
   }
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
   inliers.clear();
-  error_sqr_dists_.clear();
   inliers.reserve(indices_->size());
-  error_sqr_dists_.reserve(indices_->size());
+  error_sqr_dists_.resize(indices_->size());
 
-  for (std::size_t i = 0; i < indices_->size(); ++i) {
+#pragma omp parallel for num_threads(threads_) default(none) shared(model_coefficients, threshold)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size()); ++i) {
     const Eigen::Vector3f pt = (*input_)[(*indices_)[i]].getVector3fMap();
     const Eigen::Vector3f pt_n = (*normals_)[(*indices_)[i]].getNormalVector3fMap();
 
@@ -317,13 +321,19 @@ pcl::SampleConsensusModelTorus<PointT, PointNT>::selectWithinDistance(
 
     const float distance = (torus_closest - pt).norm();
 
-    if (distance < threshold) {
+    if (distance < threshold)
+      error_sqr_dists_[i] = distance;
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose distances are smaller than the
       // threshold
-      inliers.push_back((*indices_)[i]);
-      error_sqr_dists_.push_back(distance);
+      inliers.push_back ((*indices_)[i]);
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
-  }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

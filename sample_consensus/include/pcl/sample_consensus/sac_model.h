@@ -458,6 +458,12 @@ namespace pcl
         return (computeVariance (error_sqr_dists_));
       }
 
+      /** \brief Set how many threads the model should use.
+        * \param nr_threads the number of threads to use (if 0, the number is determined automatically)
+        */
+      inline void
+      setNumberOfThreads (unsigned int nr_threads) { threads_ = nr_threads; }
+
     protected:
 
       /** \brief Fills a sample array with random samples from the indices_ vector
@@ -600,6 +606,9 @@ namespace pcl
 
       /** \brief A user defined function that takes model coefficients and returns whether the model is acceptable or not. */
       std::function<bool(const Eigen::VectorXf &)> custom_model_constraints_;
+
+      /** \brief The number of threads the scheduler should use. */
+      unsigned int threads_{0};
     public:
       PCL_MAKE_ALIGNED_OPERATOR_NEW
  };

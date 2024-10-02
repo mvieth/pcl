@@ -182,6 +182,7 @@ namespace pcl
     protected:
       using SampleConsensusModel<PointT>::sample_size_;
       using SampleConsensusModel<PointT>::model_size_;
+      using SampleConsensusModel<PointT>::threads_;
 
       /** \brief Check if a sample of indices results in a good sample of points
         * indices.

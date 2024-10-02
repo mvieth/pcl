@@ -63,17 +63,22 @@ pcl::SampleConsensusModelNormalSphere<PointT, PointNT>::selectWithinDistance (
     return;
   }
 
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
+
   // Obtain the sphere center
   Eigen::Vector4f center = model_coefficients;
   center[3] = 0.0f;
 
   inliers.clear ();
-  error_sqr_dists_.clear ();
   inliers.reserve (indices_->size ());
-  error_sqr_dists_.reserve (indices_->size ());
+  error_sqr_dists_.resize (indices_->size ());
 
   // Iterate through the 3d points and calculate the distances from them to the sphere
-  for (std::size_t i = 0; i < indices_->size (); ++i)
+#pragma omp parallel for num_threads(threads_) default(none) shared(center, model_coefficients, threshold)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size ()); ++i)
   {
     // Calculate the distance from the point to the sphere center as the difference between
     // dist(point,sphere_origin) and sphere_radius
@@ -84,8 +89,10 @@ pcl::SampleConsensusModelNormalSphere<PointT, PointNT>::selectWithinDistance (
 
     Eigen::Vector4f n_dir = p - center;
     const double weighted_euclid_dist = (1.0 - normal_distance_weight_) * std::abs (n_dir.norm () - model_coefficients[3]);
-    if (weighted_euclid_dist > threshold) // Early termination: cannot be an inlier
+    if (weighted_euclid_dist > threshold) { // Early termination: cannot be an inlier
+      error_sqr_dists_[i] = -1.0;
       continue;
+    }
 
     // Calculate the angular distance between the point normal and the sphere normal
     Eigen::Vector4f n ((*normals_)[(*indices_)[i]].normal[0], 
@@ -97,12 +104,17 @@ pcl::SampleConsensusModelNormalSphere<PointT, PointNT>::selectWithinDistance (
 
     double distance = std::abs (normal_distance_weight_ * d_normal + weighted_euclid_dist);
     if (distance < threshold)
-    {
+      error_sqr_dists_[i] = static_cast<double> (distance);
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose distances are smaller than the threshold
       inliers.push_back ((*indices_)[i]);
-      error_sqr_dists_.push_back (static_cast<double> (distance));
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
-  }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

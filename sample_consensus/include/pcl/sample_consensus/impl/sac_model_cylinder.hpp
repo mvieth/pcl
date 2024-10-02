@@ -195,24 +195,31 @@ pcl::SampleConsensusModelCylinder<PointT, PointNT>::selectWithinDistance (
     return;
   }
 
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
+
   inliers.clear ();
-  error_sqr_dists_.clear ();
   inliers.reserve (indices_->size ());
-  error_sqr_dists_.reserve (indices_->size ());
+  error_sqr_dists_.resize (indices_->size ());
 
   Eigen::Vector4f line_pt  (model_coefficients[0], model_coefficients[1], model_coefficients[2], 0.0f);
   Eigen::Vector4f line_dir (model_coefficients[3], model_coefficients[4], model_coefficients[5], 0.0f);
   float ptdotdir = line_pt.dot (line_dir);
   float dirdotdir = 1.0f / line_dir.dot (line_dir);
   // Iterate through the 3d points and calculate the distances from them to the sphere
-  for (std::size_t i = 0; i < indices_->size (); ++i)
+#pragma omp parallel for num_threads(threads_) default(none) shared(line_pt, line_dir, ptdotdir, dirdotdir, model_coefficients, threshold)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size ()); ++i)
   {
     // Approximate the distance from the point to the cylinder as the difference between
     // dist(point,cylinder_axis) and cylinder radius
     Eigen::Vector4f pt ((*input_)[(*indices_)[i]].x, (*input_)[(*indices_)[i]].y, (*input_)[(*indices_)[i]].z, 0.0f);
     const double weighted_euclid_dist = (1.0 - normal_distance_weight_) * std::abs (pointToLineDistance (pt, model_coefficients) - model_coefficients[6]);
-    if (weighted_euclid_dist > threshold) // Early termination: cannot be an inlier
+    if (weighted_euclid_dist > threshold) { // Early termination: cannot be an inlier
+      error_sqr_dists_[i] = -1.0;
       continue;
+    }
 
     // Calculate the point's projection on the cylinder axis
     float k = (pt.dot (line_dir) - ptdotdir) * dirdotdir;
@@ -227,12 +234,17 @@ pcl::SampleConsensusModelCylinder<PointT, PointNT>::selectWithinDistance (
 
     double distance = std::abs (normal_distance_weight_ * d_normal + weighted_euclid_dist);
     if (distance < threshold)
-    {
+      error_sqr_dists_[i] = distance;
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose distances are smaller than the threshold
       inliers.push_back ((*indices_)[i]);
-      error_sqr_dists_.push_back (distance);
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
-  }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

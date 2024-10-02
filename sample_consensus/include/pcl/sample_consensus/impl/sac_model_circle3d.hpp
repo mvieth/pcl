@@ -193,14 +193,19 @@ pcl::SampleConsensusModelCircle3D<PointT>::selectWithinDistance (
     inliers.clear ();
     return;
   }
+
+#ifdef _OPENMP
+  if (threads_ == 0)
+    threads_ = omp_get_num_procs();
+#endif // _OPENMP
   inliers.clear ();
-  error_sqr_dists_.clear ();
   inliers.reserve (indices_->size ());
-  error_sqr_dists_.reserve (indices_->size ());
+  error_sqr_dists_.resize (indices_->size ());
 
   const auto squared_threshold = threshold * threshold;
   // Iterate through the 3d points and calculate the distances from them to the sphere
-  for (std::size_t i = 0; i < indices_->size (); ++i)
+#pragma omp parallel for num_threads(threads_) default(none) shared(model_coefficients, squared_threshold)
+  for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(indices_->size ()); ++i)
   {
     // what i have:
     // P : Sample Point
@@ -225,12 +230,17 @@ pcl::SampleConsensusModelCircle3D<PointT>::selectWithinDistance (
 
     const double sqr_dist = distanceVector.squaredNorm ();
     if (sqr_dist < squared_threshold)
-    {
+      error_sqr_dists_[i] = sqr_dist;
+    else
+      error_sqr_dists_[i] = -1.0;
+  }
+  for (std::size_t i = 0, j = 0; i < indices_->size (); ++i)
+    if (error_sqr_dists_[i] >= 0.0) {
       // Returns the indices of the points whose distances are smaller than the threshold
       inliers.push_back ((*indices_)[i]);
-      error_sqr_dists_.push_back (sqr_dist);
+      error_sqr_dists_[j++] = error_sqr_dists_[i];
     }
-  }
+  error_sqr_dists_.resize(inliers.size());
 }
 
 //////////////////////////////////////////////////////////////////////////

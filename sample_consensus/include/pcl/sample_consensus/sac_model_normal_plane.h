@@ -164,6 +164,7 @@ namespace pcl
     protected:
       using SampleConsensusModel<PointT>::sample_size_;
       using SampleConsensusModel<PointT>::model_size_;
+      using SampleConsensusModel<PointT>::threads_;
 
       /** This implementation uses no SIMD instructions. It is not intended for normal use.
         * See countWithinDistance which automatically uses the fastest implementation.
