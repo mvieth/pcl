@@ -48,6 +48,12 @@ pcl::search::KdTree<PointT,Tree>::KdTree (bool sorted)
 {
 }
 
+template <typename PointT, class Tree>
+pcl::search::KdTree<PointT,Tree>::KdTree (const std::string& name, bool sorted)
+  : pcl::search::Search<PointT> (name, sorted)
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT, class Tree> void
 pcl::search::KdTree<PointT,Tree>::setPointRepresentation (
