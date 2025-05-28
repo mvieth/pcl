@@ -192,3 +192,8 @@ PCL_ADD_INCLUDES("${SUBSYS_NAME}" impl ${impl_incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" console ${tools_incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" range_image ${range_image_incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" range_image/impl ${range_image_incs_impl})
+
+if(PCL_BUILD_PYTHON_BINDINGS)
+  nanobind_add_module(pcl_common_ext src/python_common.cpp)
+  target_link_libraries(pcl_common_ext PRIVATE ${LIB_NAME})
+endif()
