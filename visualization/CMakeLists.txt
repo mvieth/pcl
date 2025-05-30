@@ -252,3 +252,9 @@ endif()
 if(BUILD_TESTS)
   add_subdirectory(test)
 endif()
+
+
+if(PCL_BUILD_PYTHON_BINDINGS)
+  nanobind_add_module(pcl_visualization_ext src/python_visualization.cpp)
+  target_link_libraries(pcl_visualization_ext PRIVATE ${LIB_NAME})
+endif()

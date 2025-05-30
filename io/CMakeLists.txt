@@ -440,3 +440,8 @@ PCL_ADD_INCLUDES("${SUBSYS_NAME}" compression ${compression_incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/openni_camera" ${OPENNI_INCLUDES})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/openni2" ${OPENNI2_INCLUDES})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/impl" ${impl_incs})
+
+if(PCL_BUILD_PYTHON_BINDINGS)
+  nanobind_add_module(pcl_io_ext src/python_io.cpp)
+  target_link_libraries(pcl_io_ext PRIVATE ${LIB_NAME})
+endif()
