@@ -1,4 +1,5 @@
 #include <nanobind/nanobind.h>
+#include <nanobind/make_iterator.h>
 
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -20,5 +21,18 @@ NB_MODULE(pcl_common_ext, m)
   nb::class_<pcl::PointCloud<pcl::PointXYZ>>(m, "PointcloudXYZ")
       .def(nb::init<>())
       .def("append", &pcl::PointCloud<pcl::PointXYZ>::push_back)
-      .def("at", nb::overload_cast<std::size_t>(&pcl::PointCloud<pcl::PointXYZ>::at), "Get a point from the cloud");
+      .def("at", nb::overload_cast<std::size_t>(&pcl::PointCloud<pcl::PointXYZ>::at), "Get a point from the cloud")
+      .def("__getitem__",
+             [](pcl::PointCloud<pcl::PointXYZ> &cloud, std::size_t i) -> pcl::PointXYZ& {
+                 return cloud[i];
+             }
+             //, Policy
+             )
+      .def("resize", nb::overload_cast<std::size_t>(&pcl::PointCloud<pcl::PointXYZ>::resize))
+      .def("__iter__",
+        [](const pcl::PointCloud<pcl::PointXYZ> &v) {
+            return nb::make_iterator(nb::type<pcl::PointCloud<pcl::PointXYZ>>(), "iterator",
+                                     v.begin(), v.end());
+        }, nb::keep_alive<0, 1>());
+      ;
 }

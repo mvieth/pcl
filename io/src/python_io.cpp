@@ -17,4 +17,7 @@ NB_MODULE(pcl_io_ext, m)
       },
       "Read a PCD file containing PointXYZ data",
       nb::arg("filePath"));
+
+  m.def("loadPCDFile", &pcl::io::loadPCDFile<pcl::PointXYZ>);
+  m.def("savePCDFileBinary", &pcl::io::savePCDFileBinary<pcl::PointXYZ>);
 }

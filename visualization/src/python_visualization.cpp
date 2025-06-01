@@ -17,7 +17,7 @@ NB_MODULE(pcl_visualization_ext, m)
                                const std::string&,
                                int>(&pcl::visualization::PCLVisualizer::addPointCloud),
              "Add point cloud to visualizer.")*/
-      .def("AddPointCloudXYZ",
+      .def("AddPointCloudXYZ", // TODO probably not necessary to add XYZ?
            nb::overload_cast<const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&,
                              const std::string&,
                              int>(

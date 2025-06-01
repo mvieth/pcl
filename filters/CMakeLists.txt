@@ -138,3 +138,8 @@ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}" ${incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/experimental" ${experimental_incs})
 PCL_ADD_INCLUDES("${SUBSYS_NAME}" "${SUBSYS_NAME}/impl" ${impl_incs})
+
+if(PCL_BUILD_PYTHON_BINDINGS)
+  nanobind_add_module(${LIB_NAME}_ext src/python_${SUBSYS_NAME}.cpp)
+  target_link_libraries(${LIB_NAME}_ext PRIVATE ${LIB_NAME})
+endif()
