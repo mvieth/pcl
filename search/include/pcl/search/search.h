@@ -421,6 +421,13 @@ namespace pcl
           const std::vector<float>& distances_;
         };
     }; // class Search    
+
+    /**
+      * Automatically select the fastest search method for the given point cloud. Make sure to delete the returned object after use! Distance function (euclidean?)
+      * \param[in] sorted_results Whether the search method should always return results sorted by distance (may be slower than unsorted)
+      */
+    template<typename PointT>
+    Search<PointT> * autoSelectMethod(const typename pcl::PointCloud<PointT>::ConstPtr& cloud, bool sorted_results);
   } // namespace search
 } // namespace pcl
 

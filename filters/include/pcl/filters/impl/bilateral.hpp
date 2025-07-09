@@ -41,8 +41,8 @@
 #define PCL_FILTERS_BILATERAL_IMPL_H_
 
 #include <pcl/filters/bilateral.h>
-#include <pcl/search/organized.h> // for OrganizedNeighbor
-#include <pcl/search/kdtree.h> // for KdTree
+//#include <pcl/search/organized.h> // for OrganizedNeighbor
+//#include <pcl/search/kdtree.h> // for KdTree
 #include <pcl/common/point_tests.h> // for isXYZFinite
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -85,11 +85,12 @@ pcl::BilateralFilter<PointT>::applyFilter (PointCloud &output)
   if (!tree_)
   {
     // For organized datasets, use an OrganizedNeighbor
-    if (input_->isOrganized ())
-      tree_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
+    //if (input_->isOrganized ())
+    //  tree_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
     // For unorganized data, use a FLANN kdtree
-    else
-      tree_.reset (new pcl::search::KdTree<PointT> (false));
+    //else
+    //  tree_.reset (new pcl::search::KdTree<PointT> (false));
+    tree_.reset (pcl::search::autoSelectMethod<PointT>(input_, false));
   }
   tree_->setInputCloud (input_);
 

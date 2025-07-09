@@ -41,8 +41,8 @@
 #define PCL_FILTERS_CONVOLUTION_3D_IMPL_HPP
 
 #include <pcl/common/point_tests.h> // for isFinite
-#include <pcl/search/organized.h>
-#include <pcl/search/kdtree.h>
+//#include <pcl/search/organized.h>
+//#include <pcl/search/kdtree.h>
 #include <pcl/pcl_config.h>
 #include <pcl/point_types.h>
 #include <pcl/common/point_tests.h>
@@ -195,10 +195,11 @@ pcl::filters::Convolution3D<PointInT, PointOutT, KernelT>::initCompute ()
   // Initialize the spatial locator
   if (!tree_)
   {
-    if (input_->isOrganized ())
-      tree_.reset (new pcl::search::OrganizedNeighbor<PointInT> ());
-    else
-      tree_.reset (new pcl::search::KdTree<PointInT> (false));
+    //if (input_->isOrganized ())
+    //  tree_.reset (new pcl::search::OrganizedNeighbor<PointInT> ());
+    //else
+    //  tree_.reset (new pcl::search::KdTree<PointInT> (false));
+    tree_.reset (pcl::search::autoSelectMethod<PointT>(input_, false));
   }
   // If no search surface has been defined, use the input dataset as the search surface itself
   if (!surface_)

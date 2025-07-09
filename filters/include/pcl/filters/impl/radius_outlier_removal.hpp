@@ -40,9 +40,11 @@
 #ifndef PCL_FILTERS_IMPL_RADIUS_OUTLIER_REMOVAL_H_
 #define PCL_FILTERS_IMPL_RADIUS_OUTLIER_REMOVAL_H_
 
+#include <pcl/common/point_tests.h> // for isXYZFinite
 #include <pcl/filters/radius_outlier_removal.h>
-#include <pcl/search/organized.h> // for OrganizedNeighbor
-#include <pcl/search/kdtree.h> // for KdTree
+//#include <pcl/search/organized.h> // for OrganizedNeighbor
+//#include <pcl/search/kdtree.h> // for KdTree
+#include <pcl/search/search.h> // for autoSelectMethod
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
@@ -59,10 +61,11 @@ pcl::RadiusOutlierRemoval<PointT>::applyFilterIndices (Indices &indices)
   // Initialize the search class
   if (!searcher_)
   {
-    if (input_->isOrganized ())
-      searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
-    else
-      searcher_.reset (new pcl::search::KdTree<PointT> (false));
+    //if (input_->isOrganized ())
+    //  searcher_.reset (new pcl::search::OrganizedNeighbor<PointT> ());
+    //else
+    //  searcher_.reset (new pcl::search::KdTree<PointT> (false));
+    searcher_.reset (pcl::search::autoSelectMethod<PointT>(input_, false));
   }
   if (!searcher_->setInputCloud (input_))
   {

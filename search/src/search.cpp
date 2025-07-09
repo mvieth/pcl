@@ -41,5 +41,26 @@
 #include <pcl/impl/instantiate.hpp>
 #include <pcl/point_types.h>
 PCL_INSTANTIATE(Search, PCL_POINT_TYPES)
+
+#include <pcl/search/organized.h>
+#include <pcl/search/kdtree_nanoflann.h>
+template<typename PointT>
+pcl::search::Search<PointT> * pcl::search::autoSelectMethod(const typename pcl::PointCloud<PointT>::ConstPtr& cloud, bool sorted_results) { // TODO sorted/unsorted? knn/radius/1knn search?
+  pcl::search::Search<PointT> * searcher;
+  if (cloud->isOrganized ()) {
+    searcher = new pcl::search::OrganizedNeighbor<PointT> (sorted_results);
+    if(!searcher->setInputCloud (cloud)) { // may return false if OrganizedNeighbor cannot work with the cloud, then use KdTree instead
+      //searcher = new pcl::search::KdTree<PointT> (sorted_results);
+      searcher = new pcl::search::KdTreeNanoflann<PointT> (sorted_results);
+    }
+  } else {
+    //searcher = new pcl::search::KdTree<PointT> (sorted_results);
+    searcher = new pcl::search::KdTreeNanoflann<PointT> (sorted_results);
+  }
+  return searcher; // TODO should this guarantee to call setInputCloud on searcher?
+}
+
+#define PCL_INSTANTIATE_AutoSelectMethod(T) template pcl::search::Search<T> * pcl::search::autoSelectMethod<T>(const typename pcl::PointCloud<T>::ConstPtr& cloud, bool sorted_results);
+PCL_INSTANTIATE(AutoSelectMethod, PCL_XYZ_POINT_TYPES)
 #endif    // PCL_NO_PRECOMPILE
 

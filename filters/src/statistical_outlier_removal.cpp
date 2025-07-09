@@ -195,10 +195,11 @@ pcl::StatisticalOutlierRemoval<pcl::PCLPointCloud2>::generateStatistics (double&
   // Initialize the spatial locator
   if (!tree_)
   {
-    if (cloud->isOrganized ())
-      tree_.reset (new pcl::search::OrganizedNeighbor<pcl::PointXYZ> ());
-    else
-      tree_.reset (new pcl::search::KdTree<pcl::PointXYZ> (false));
+    //if (cloud->isOrganized ())
+    //  tree_.reset (new pcl::search::OrganizedNeighbor<pcl::PointXYZ> ());
+    //else
+    //  tree_.reset (new pcl::search::KdTree<pcl::PointXYZ> (false));
+    tree_.reset (pcl::search::autoSelectMethod<pcl::PointXYZ>(cloud, false));
   }
 
   tree_->setInputCloud (cloud);
