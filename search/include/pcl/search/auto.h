@@ -29,6 +29,9 @@ namespace pcl {
       */
     template<typename PointT>
     pcl::search::Search<PointT> * autoSelectMethod(const typename pcl::PointCloud<PointT>::ConstPtr& cloud, bool sorted_results, Purpose purpose = Purpose::undefined);
+
+    template<typename PointT>
+    pcl::search::Search<PointT> * autoSelectMethod(const typename pcl::PointCloud<PointT>::ConstPtr& cloud, const pcl::IndicesConstPtr& indices, bool sorted_results, Purpose purpose = Purpose::undefined);
   } // namespace search
 } // namespace pcl
 
