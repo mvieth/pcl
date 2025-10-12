@@ -137,12 +137,12 @@ public:
 
   using ErrorFunctorPtr = typename ErrorFunctor::Ptr;
 
-  using FeatureKdTreePtr = typename KdTreeFLANN<FeatureT>::Ptr;
+  using FeatureKdTreePtr = typename pcl::search::Search<FeatureT>::Ptr;
   /** \brief Constructor. */
   SampleConsensusInitialAlignment()
   : input_features_()
   , target_features_()
-  , feature_tree_(new pcl::KdTreeFLANN<FeatureT>)
+ // , feature_tree_(new pcl::KdTreeFLANN<FeatureT>)
   , error_functor_()
   {
     reg_name_ = "SampleConsensusInitialAlignment";
