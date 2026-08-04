@@ -1,9 +1,9 @@
 set(SUBSYS_NAME people)
 set(SUBSYS_DESC "Point cloud people library")
-set(SUBSYS_DEPS common kdtree search sample_consensus filters io visualization geometry segmentation octree)
+set(SUBSYS_DEPS common search sample_consensus filters io visualization geometry segmentation octree)
 
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
-PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS})
+PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS} OPT_DEPS kdtree)
 
 PCL_ADD_DOC("${SUBSYS_NAME}")
 

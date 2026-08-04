@@ -1,10 +1,10 @@
 set(SUBSYS_NAME surface)
 set(SUBSYS_DESC "Point cloud surface library")
-set(SUBSYS_DEPS common search kdtree octree)
+set(SUBSYS_DEPS common search octree)
 set(SUBSYS_EXT_DEPS "")
 
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ON)
-PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS} OPT_DEPS qhull vtk OpenMP)
+PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS} OPT_DEPS qhull vtk OpenMP kdtree)
 
 PCL_ADD_DOC("${SUBSYS_NAME}")
 

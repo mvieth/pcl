@@ -41,7 +41,7 @@
 #pragma once
 
 #include <pcl/registration/transformation_validation.h>
-#include <pcl/search/kdtree.h>
+//#include <pcl/search/kdtree.h>
 #include <pcl/memory.h>
 #include <pcl/pcl_macros.h>
 #include <pcl/point_representation.h>
@@ -80,10 +80,10 @@ public:
   using ConstPtr =
       shared_ptr<const TransformationValidation<PointSource, PointTarget, Scalar>>;
 
-  using KdTree = pcl::search::KdTree<PointTarget>;
+  using KdTree = pcl::search::Search<PointTarget>;
   using KdTreePtr = typename KdTree::Ptr;
 
-  using PointRepresentationConstPtr = typename KdTree::PointRepresentationConstPtr;
+  using PointRepresentationConstPtr = typename PointRepresentation<PointTarget>::ConstPtr;// typename KdTree::PointRepresentationConstPtr;
 
   using PointCloudSourceConstPtr =
       typename TransformationValidation<PointSource,
@@ -99,7 +99,7 @@ public:
   TransformationValidationEuclidean()
   : max_range_(std::numeric_limits<double>::max())
   , threshold_(std::numeric_limits<double>::quiet_NaN())
-  , tree_(new pcl::search::KdTree<PointTarget>)
+  //, tree_(new pcl::search::KdTree<PointTarget>)
   {}
 
   virtual ~TransformationValidationEuclidean() = default;

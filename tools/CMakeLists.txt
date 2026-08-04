@@ -222,11 +222,13 @@ if(TARGET pcl_segmentation)
   PCL_ADD_EXECUTABLE(pcl_sac_segmentation_plane COMPONENT ${SUBSYS_NAME} SOURCES sac_segmentation_plane.cpp)
   target_link_libraries(pcl_sac_segmentation_plane pcl_common pcl_io pcl_sample_consensus pcl_segmentation)
 
-  PCL_ADD_EXECUTABLE(pcl_train_unary_classifier COMPONENT ${SUBSYS_NAME} SOURCES train_unary_classifier.cpp)
-  target_link_libraries (pcl_train_unary_classifier pcl_common pcl_io pcl_segmentation)
+  if(FLANN_FOUND)
+    PCL_ADD_EXECUTABLE(pcl_train_unary_classifier COMPONENT ${SUBSYS_NAME} SOURCES train_unary_classifier.cpp)
+    target_link_libraries (pcl_train_unary_classifier pcl_common pcl_io pcl_segmentation)
 
-  PCL_ADD_EXECUTABLE(pcl_unary_classifier_segment COMPONENT ${SUBSYS_NAME} SOURCES unary_classifier_segment.cpp)
-  target_link_libraries (pcl_unary_classifier_segment pcl_common pcl_io pcl_segmentation)
+    PCL_ADD_EXECUTABLE(pcl_unary_classifier_segment COMPONENT ${SUBSYS_NAME} SOURCES unary_classifier_segment.cpp)
+    target_link_libraries (pcl_unary_classifier_segment pcl_common pcl_io pcl_segmentation)
+  endif()
 
   PCL_ADD_EXECUTABLE(pcl_crf_segmentation COMPONENT ${SUBSYS_NAME} SOURCES crf_segmentation.cpp)
   target_link_libraries (pcl_crf_segmentation pcl_common pcl_io pcl_segmentation)

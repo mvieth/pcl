@@ -10,10 +10,13 @@
 #ifndef PCL_SEARCH_AUTO_IMPL_HPP_
 #define PCL_SEARCH_AUTO_IMPL_HPP_
 
+#include <pcl/pcl_config.h>
 #include <pcl/common/utils.h> // for ignore
 #include <pcl/search/auto.h>
 #include <pcl/search/brute_force.h>
+#if PCL_HAS_FLANN
 #include <pcl/search/kdtree.h>
+#endif
 #include <pcl/search/kdtree_nanoflann.h>
 #include <pcl/search/octree.h>
 #include <pcl/search/organized.h>

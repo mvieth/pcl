@@ -1,11 +1,11 @@
 set(SUBSYS_NAME recognition)
 set(SUBSYS_DESC "Point cloud recognition library")
-set(SUBSYS_DEPS common io search kdtree octree features filters registration sample_consensus ml)
+set(SUBSYS_DEPS common io search octree features filters registration sample_consensus ml)
 
 set(DEFAULT ON)
 
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
-PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS})
+PCL_SUBSYS_DEPEND(build NAME ${SUBSYS_NAME} DEPS ${SUBSYS_DEPS} OPT_DEPS kdtree)
 
 PCL_ADD_DOC("${SUBSYS_NAME}")
 

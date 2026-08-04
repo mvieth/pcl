@@ -43,7 +43,10 @@
 #include <pcl/pcl_base.h>
 
 #include <pcl/search/search.h> // for Search
-#include <pcl/search/kdtree.h> // for KdTree
+//#include <pcl/search/kdtree.h> // for KdTree
+#if PCL_HAS_FLANN
+#include <pcl/kdtree/kdtree.h>
+#endif
 
 namespace pcl
 {
@@ -82,6 +85,7 @@ namespace pcl
       const typename search::Search<PointT>::Ptr &tree, float tolerance, std::vector<PointIndices> &clusters,
       unsigned int min_pts_per_cluster = 1, unsigned int max_pts_per_cluster = (std::numeric_limits<int>::max) ());
 
+#if PCL_HAS_FLANN
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /** \brief Decompose a region of space into clusters based on the euclidean distance between points, and the normal
     * angular deviation between points. Each point added to the cluster is origin to another radius search. Each point
@@ -315,6 +319,7 @@ namespace pcl
       }
     }
   }
+#endif // PCL_HAS_FLANN
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
