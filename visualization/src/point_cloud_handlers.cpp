@@ -618,7 +618,11 @@ pcl::visualization::PointCloudGeometryHandler<pcl::PCLPointCloud2>::getGeometry 
   
   vtkIdType nr_points = cloud_->width * cloud_->height;
   
+#if (VTK_MAJOR_VERSION > 9) || (VTK_MAJOR_VERSION == 9 && VTK_MINOR_VERSION >= 7)
+  if (!data->ReserveTuples(nr_points))
+#else
   if (!data->Resize(nr_points))
+#endif
   {
     PCL_ERROR("[point_cloud_handlers::getGeometry] Failed to allocate space for points in VTK array.\n");
     throw std::bad_alloc();
