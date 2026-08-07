@@ -44,6 +44,7 @@
 //#include <pcl/gpu/utils/device/funcattrib.hpp>
 #include <pcl/gpu/utils/safe_call.hpp>
 
+#include <thrust/distance.h>
 #include <thrust/tuple.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
