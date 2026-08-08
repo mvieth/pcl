@@ -241,7 +241,10 @@ main (int argc, char** argv)
   vtkSmartPointer<vtkCellLocator> tree = vtkSmartPointer<vtkCellLocator>::New ();
   tree->SetDataSet (data);
   tree->CacheCellBoundsOn ();
+#if (VTK_MAJOR_VERSION < 9) || (VTK_MAJOR_VERSION == 9 && VTK_MINOR_VERSION < 7)
+  // deprecated because it is a no-op, starting with VTK 9.7.0
   tree->SetTolerance (0.0);
+#endif
   tree->SetNumberOfCellsPerBucket (1);
   tree->AutomaticOn ();
   tree->BuildLocator ();

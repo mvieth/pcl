@@ -53,7 +53,11 @@
 #include <vtkDataArray.h>
 #include <vtkPointData.h>
 #include <vtkHedgeHog.h>
+#if (VTK_MAJOR_VERSION > 9) || (VTK_MAJOR_VERSION == 9 && VTK_MINOR_VERSION >= 7)
+#include <vtkTransformFilter.h>
+#else
 #include <vtkTransformPolyDataFilter.h>
+#endif
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
 #include <vtkTransform.h>
@@ -279,7 +283,11 @@ update (CallbackParameters* params)
     vtk_transform->SetMatrix (vtk_mat);
 
     // Setup the transformator
+#if (VTK_MAJOR_VERSION > 9) || (VTK_MAJOR_VERSION == 9 && VTK_MINOR_VERSION >= 7)
+    vtkSmartPointer<vtkTransformFilter> vtk_transformator = vtkSmartPointer<vtkTransformFilter>::New ();
+#else
     vtkSmartPointer<vtkTransformPolyDataFilter> vtk_transformator = vtkSmartPointer<vtkTransformPolyDataFilter>::New ();
+#endif
     vtk_transformator->SetTransform (vtk_transform);
     vtk_transformator->SetInputData (vtk_model);
     vtk_transformator->Update ();
