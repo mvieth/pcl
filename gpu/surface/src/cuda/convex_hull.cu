@@ -137,7 +137,11 @@ namespace pcl
       int transform_reduce_index(It beg, It end, Unary unop, Init init, Binary binary)
 	  {
 	    thrust::counting_iterator<int> cbeg(0);
+#if THRUST_VERSION >= 300100
+		thrust::counting_iterator<int> cend = cbeg + cuda::std::distance(beg, end);
+#else
 		thrust::counting_iterator<int> cend = cbeg + thrust::distance(beg, end);
+#endif
 
 	    thrust::tuple<float, int> t = thrust::transform_reduce(
 		  thrust::make_zip_iterator(thrust::make_tuple(beg, cbeg)),
